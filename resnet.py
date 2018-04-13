@@ -17,23 +17,23 @@ _BATCH_NORM_EPSILON = 1e-5
 
 
 def batch_norm(x, training):
-    batch_means, batch_variances = tf.nn.moments(x, [0, 2, 3], keep_dims=False)
+    batch_means, batch_variances = tf.nn.moments(x, [0, 2, 3], keep_dims=True) # [0,1,2] # TODO NHWC
     offsets = tf.Variable(tf.zeros_like(batch_means))
     scales = tf.Variable(tf.ones_like(batch_variances))
     ema = tf.train.ExponentialMovingAverage(decay=_BATCH_NORM_DECAY)
 
-    def ema():
+    def ema_apply():
         ema_apply_op = ema.apply([batch_means, batch_variances])
         with tf.control_dependencies([ema_apply_op]):
             return tf.identity(batch_means), tf.identity(batch_variances)
 
-    means, variances = ema() if training else (ema.average(batch_means), ema.average(batch_variances))
+    means, variances = ema_apply() if training else (ema.average(batch_means), ema.average(batch_variances))
     x = tf.nn.batch_normalization(x, means, variances, offsets, scales, _BATCH_NORM_EPSILON)
     return x
 
 
 def batch_norm_old(x, training):
-    return tf.layers.batch_normalization(inputs=x, axis=1, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training, data_format='channel_first')
+    return tf.layers.batch_normalization(inputs=x, axis=1, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training)
 
 
 def fixed_padding(x, kernel_size):
