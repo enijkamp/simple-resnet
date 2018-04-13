@@ -45,7 +45,7 @@ def conv2d_fixed_padding(x, filters, kernel_size, strides):
   return tf.layers.conv2d(
       inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
-      kernel_initializer=tf.variance_scaling_initializer())
+      kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_first')
 
 
 def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
@@ -121,7 +121,7 @@ class Model(object):
             num_filters = self.num_filters * (2**i)
             x = block_layer(x=x, filters=num_filters, block_fn=self.block_fn, blocks=num_blocks, strides=self.block_strides[i], training=training, name='block_layer{}'.format(i + 1))
 
-        x = batch_norm(x=x)
+        x = batch_norm(x=x, training=training)
         x = tf.nn.relu(x)
 
         axes = [2, 3]
