@@ -121,7 +121,7 @@ class Model(object):
             num_filters = self.num_filters * (2**i)
             x = block_layer(x=x, filters=num_filters, block_fn=self.block_fn, blocks=num_blocks, strides=self.block_strides[i], training=training, name='block_layer{}'.format(i + 1))
 
-        x = batch_norm(x=x)
+        x = batch_norm(x=x, training=training)
         x = tf.nn.relu(x)
 
         axes = [2, 3]
