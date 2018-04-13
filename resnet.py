@@ -38,23 +38,31 @@ def fixed_padding(x, kernel_size):
     return tf.pad(x, [[0, 0], [0, 0], [pad_beg, pad_end], [pad_beg, pad_end]])
 
 
-def conv2d_fixed_padding(x, filters, kernel_size, strides):
-  if strides > 1:
-    x = fixed_padding(x, kernel_size)
+def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
+    if strides > 1:
+        x = fixed_padding(x, kernel_size)
 
-  return tf.layers.conv2d(
+    print(x.get_shape())
+
+    x = tf.layers.conv2d(
       inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
       kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_first')
 
+    return x
 
-def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
+
+def conv2d_fixed_padding(x, filters, kernel_size, strides):
     if strides > 1:
         x = fixed_padding(x, kernel_size)
-    padding = ('SAME' if strides == 1 else 'VALID')
 
-    w = tf.Variable(tf.truncated_normal(shape=[-1, kernel_size, kernel_size, filters], stddev=0.1), validate_shape=False)
-    return tf.nn.conv2d(x, w, padding=padding, strides=[strides, strides, strides, strides])
+    padding = ('SAME' if strides == 1 else 'VALID')
+    channels = x.get_shape()[1].value
+
+    w = tf.Variable(tf.truncated_normal(shape=[kernel_size, kernel_size, channels, filters], stddev=0.1))
+    x = tf.nn.conv2d(x, filter=w, padding=padding, strides=[1, 1, strides, strides], data_format='NCHW')
+
+    return x
 
 
 def _building_block_v1(x, filters, training, projection_shortcut, strides):
@@ -298,6 +306,8 @@ def download_data(flags):
 
 
 if __name__ == '__main__':
+    tf.set_random_seed(1)
+
     tf.logging.set_verbosity(tf.logging.INFO)
 
     tf.app.flags.DEFINE_string('data_dir', 'data', '')
