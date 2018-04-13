@@ -14,18 +14,24 @@ _NUM_IMAGES = {'train': 50000, 'validation': 10000}
 
 # TODO https://stackoverflow.com/questions/33949786/how-could-i-use-batch-normalization-in-tensorflow?answertab=votes#tab-top
 # TODO implement training and update means?
-def batch_norm_old(x, training):
+def batch_norm(x, training):
     epsilon = 1e-3
 
-    gamma = tf.Variable(tf.ones([-1]), validate_shape=False)
-    beta = tf.Variable(tf.zeros([-1]), validate_shape=False)
+    channels = x.get_shape()[1].value
 
-    mu, sigma = tf.nn.moments(x, [0, 1, 2])
+    gamma = tf.Variable(tf.ones([channels]))
+    beta = tf.Variable(tf.zeros([channels]))
+
+    mu, sigma = tf.nn.moments(x, [0, 2, 3]) # [0,1,2] # TODO use NHWC
+
+    print(x.get_shape())
+    print(mu.get_shape())
+
     x_hat = (x - mu) / tf.sqrt(sigma + epsilon)
     return gamma * x_hat + beta
 
 
-def batch_norm(x, training):
+def batch_norm_old(x, training):
     _BATCH_NORM_DECAY = 0.997
     _BATCH_NORM_EPSILON = 1e-5
     return tf.layers.batch_normalization(inputs=x, axis=1, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training)
@@ -41,8 +47,6 @@ def fixed_padding(x, kernel_size):
 def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
     if strides > 1:
         x = fixed_padding(x, kernel_size)
-
-    print(x.get_shape())
 
     x = tf.layers.conv2d(
       inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
