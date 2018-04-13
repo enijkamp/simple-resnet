@@ -27,7 +27,7 @@ def batch_norm(x, training):
         with tf.control_dependencies([ema_apply_op]):
             return tf.identity(batch_means), tf.identity(batch_variances)
 
-    means, variances = tf.cond(training, lambda: ema(), lambda: (ema.average(batch_means), ema.average(batch_variances)))
+    means, variances = ema() if training else (ema.average(batch_means), ema.average(batch_variances))
     x = tf.nn.batch_normalization(x, means, variances, offsets, scales, _BATCH_NORM_EPSILON)
     return x
 
