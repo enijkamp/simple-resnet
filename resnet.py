@@ -55,7 +55,7 @@ def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
     return x
 
 
-def conv2d_fixed_padding(x, filters, kernel_size, strides):
+def conv2d_fixed_padding(x, filters, kernel_size, strides, name=None):
     if strides > 1:
         x = fixed_padding(x, kernel_size)
 
@@ -63,7 +63,7 @@ def conv2d_fixed_padding(x, filters, kernel_size, strides):
     channels = x.get_shape()[-1].value
 
     w = tf.Variable(tf.truncated_normal(shape=[kernel_size, kernel_size, channels, filters], stddev=0.1))
-    x = tf.nn.conv2d(x, filter=w, padding=padding, strides=[1, strides, strides, 1], data_format='NHWC')
+    x = tf.nn.conv2d(x, filter=w, padding=padding, strides=[1, strides, strides, 1], data_format='NHWC', name=name)
 
     return x
 
@@ -120,12 +120,10 @@ class Model(object):
         self.final_size = final_size
 
     def __call__(self, x, training):
-        x = conv2d_fixed_padding(x=x, filters=self.num_filters, kernel_size=self.kernel_size, strides=self.conv_stride)
-        x = tf.identity(x, 'initial_conv')
+        x = conv2d_fixed_padding(x=x, filters=self.num_filters, kernel_size=self.kernel_size, strides=self.conv_stride, name='initial_conv')
 
         if self.first_pool_size:
-            x = tf.nn.max_pool(x, ksize=[1, self.first_pool_size, self.first_pool_size, 1], strides=[1, self.first_pool_stride, self.first_pool_size, 1], padding='SAME')
-            x = tf.identity(x, 'initial_max_pool')
+            x = tf.nn.max_pool(x, ksize=[1, self.first_pool_size, self.first_pool_size, 1], strides=[1, self.first_pool_stride, self.first_pool_size, 1], padding='SAME', name='initial_max_pool')
 
         for i, num_blocks in enumerate(self.block_sizes):
             num_filters = self.num_filters * (2**i)
@@ -134,13 +132,10 @@ class Model(object):
         x = batch_norm(x=x, training=training)
         x = tf.nn.relu(x)
 
-        axes = [1, 2]
-        x = tf.reduce_mean(x, axes, keepdims=True)
-        x = tf.identity(x, 'final_reduce_mean')
+        x = tf.reduce_mean(x, axis=[1, 2], keepdims=True, name='final_reduce_mean')
 
         x = tf.reshape(x, [-1, self.final_size])
-        x = tf.layers.dense(inputs=x, units=self.num_classes)
-        x = tf.identity(x, 'final_dense')
+        x = tf.layers.dense(inputs=x, units=self.num_classes, name='final_dense')
 
         return x
 
