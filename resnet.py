@@ -9,31 +9,30 @@ _NUM_CLASSES = 10
 _NUM_DATA_FILES = 5
 _NUM_IMAGES = {'train': 50000, 'validation': 10000}
 
+_BATCH_NORM_DECAY = 0.997
+_BATCH_NORM_EPSILON = 1e-5
+
 
 ###############################################################################
 
-# TODO https://stackoverflow.com/questions/33949786/how-could-i-use-batch-normalization-in-tensorflow?answertab=votes#tab-top
-# TODO implement training and update means?
+
 def batch_norm(x, training):
-    epsilon = 1e-3
+    batch_means, batch_variances = tf.nn.moments(x, [0, 2, 3], keep_dims=False)
+    offsets = tf.Variable(tf.zeros_like(batch_means))
+    scales = tf.Variable(tf.ones_like(batch_variances))
+    ema = tf.train.ExponentialMovingAverage(decay=_BATCH_NORM_DECAY)
 
-    channels = x.get_shape()[1].value
+    def ema():
+        ema_apply_op = ema.apply([batch_means, batch_variances])
+        with tf.control_dependencies([ema_apply_op]):
+            return tf.identity(batch_means), tf.identity(batch_variances)
 
-    gamma = tf.Variable(tf.ones([channels]))
-    beta = tf.Variable(tf.zeros([channels]))
-
-    mu, sigma = tf.nn.moments(x, [0, 2, 3]) # [0,1,2] # TODO use NHWC
-
-    print(x.get_shape())
-    print(mu.get_shape())
-
-    x_hat = (x - mu) / tf.sqrt(sigma + epsilon)
-    return gamma * x_hat + beta
+    means, variances = tf.cond(training, lambda: ema(), lambda: (ema.average(batch_means), ema.average(batch_variances)))
+    x = tf.nn.batch_normalization(x, means, variances, offsets, scales, _BATCH_NORM_EPSILON)
+    return x
 
 
 def batch_norm_old(x, training):
-    _BATCH_NORM_DECAY = 0.997
-    _BATCH_NORM_EPSILON = 1e-5
     return tf.layers.batch_normalization(inputs=x, axis=1, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training, data_format='channel_first')
 
 
