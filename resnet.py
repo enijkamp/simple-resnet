@@ -17,7 +17,7 @@ _BATCH_NORM_EPSILON = 1e-5
 
 
 def batch_norm(x, training):
-    batch_means, batch_variances = tf.nn.moments(x, [0, 2, 3], keep_dims=True) # [0,1,2] # TODO NHWC
+    batch_means, batch_variances = tf.nn.moments(x, [0, 1, 2], keep_dims=True)
     offsets = tf.Variable(tf.zeros_like(batch_means))
     scales = tf.Variable(tf.ones_like(batch_variances))
     ema = tf.train.ExponentialMovingAverage(decay=_BATCH_NORM_DECAY)
@@ -33,14 +33,14 @@ def batch_norm(x, training):
 
 
 def batch_norm_old(x, training):
-    return tf.layers.batch_normalization(inputs=x, axis=1, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training)
+    return tf.layers.batch_normalization(inputs=x, axis=3, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training)
 
 
 def fixed_padding(x, kernel_size):
     pad_total = kernel_size - 1
     pad_beg = pad_total // 2
     pad_end = pad_total - pad_beg
-    return tf.pad(x, [[0, 0], [0, 0], [pad_beg, pad_end], [pad_beg, pad_end]])
+    return tf.pad(x, [[0, 0], [pad_beg, pad_end], [pad_beg, pad_end], [0, 0]])
 
 
 def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
@@ -50,7 +50,7 @@ def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
     x = tf.layers.conv2d(
       inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
-      kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_first')
+      kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_last')
 
     return x
 
@@ -60,10 +60,10 @@ def conv2d_fixed_padding(x, filters, kernel_size, strides):
         x = fixed_padding(x, kernel_size)
 
     padding = ('SAME' if strides == 1 else 'VALID')
-    channels = x.get_shape()[1].value
+    channels = x.get_shape()[-1].value
 
     w = tf.Variable(tf.truncated_normal(shape=[kernel_size, kernel_size, channels, filters], stddev=0.1))
-    x = tf.nn.conv2d(x, filter=w, padding=padding, strides=[1, 1, strides, strides], data_format='NCHW')
+    x = tf.nn.conv2d(x, filter=w, padding=padding, strides=[1, strides, strides, 1], data_format='NHWC')
 
     return x
 
@@ -120,7 +120,6 @@ class Model(object):
         self.final_size = final_size
 
     def __call__(self, x, training):
-        x = tf.transpose(x, [0, 3, 1, 2])
         x = conv2d_fixed_padding(x=x, filters=self.num_filters, kernel_size=self.kernel_size, strides=self.conv_stride)
         x = tf.identity(x, 'initial_conv')
 
@@ -135,7 +134,7 @@ class Model(object):
         x = batch_norm(x=x, training=training)
         x = tf.nn.relu(x)
 
-        axes = [2, 3]
+        axes = [1, 2]
         x = tf.reduce_mean(x, axes, keepdims=True)
         x = tf.identity(x, 'final_reduce_mean')
 
