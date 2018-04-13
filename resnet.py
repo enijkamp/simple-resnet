@@ -43,14 +43,14 @@ def fixed_padding(x, kernel_size):
     return tf.pad(x, [[0, 0], [pad_beg, pad_end], [pad_beg, pad_end], [0, 0]])
 
 
-def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
+def conv2d_fixed_padding_old(x, filters, kernel_size, strides, name=None):
     if strides > 1:
         x = fixed_padding(x, kernel_size)
 
     x = tf.layers.conv2d(
       inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
-      kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_last')
+      kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_last', name=name)
 
     return x
 
