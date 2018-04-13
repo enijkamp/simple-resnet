@@ -179,7 +179,6 @@ def resnet_model_fn(features, labels, mode, model_class, resnet_size, weight_dec
     # objective
     cross_entropy = tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels)
     l2_loss = weight_decay * tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'batch_normalization' not in v.name])
-    tf.summary.scalar('l2_loss', l2_loss)
     loss = cross_entropy + l2_loss
 
     # train
@@ -249,8 +248,6 @@ def process_record_dataset(dataset, is_training, batch_size, shuffle_buffer, par
 def input_function(is_training, data_dir, batch_size, num_epochs=1, num_parallel_calls=1):
     filenames = get_filenames(is_training, data_dir)
     dataset = tf.data.FixedLengthRecordDataset(filenames, _RECORD_BYTES)
-    num_images = is_training and _NUM_IMAGES['train'] or _NUM_IMAGES['validation']
-
     return process_record_dataset(dataset, is_training, batch_size, _NUM_IMAGES['train'], parse_record, num_epochs, num_parallel_calls)
 
 
@@ -308,8 +305,6 @@ def download_data(flags):
 
 
 if __name__ == '__main__':
-    tf.set_random_seed(1)
-
     tf.logging.set_verbosity(tf.logging.INFO)
 
     tf.app.flags.DEFINE_string('data_dir', 'data', '')
