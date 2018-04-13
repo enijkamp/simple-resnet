@@ -28,7 +28,7 @@ def batch_norm_old(x, training):
 def batch_norm(x, training):
     _BATCH_NORM_DECAY = 0.997
     _BATCH_NORM_EPSILON = 1e-5
-    return tf.layers.batch_normalization(inputs=x, axis=1, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training)
+    return tf.layers.batch_normalization(inputs=x, axis=1, momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True, scale=True, training=training, data_format='channel_first')
 
 
 def fixed_padding(x, kernel_size):
@@ -45,7 +45,7 @@ def conv2d_fixed_padding(x, filters, kernel_size, strides):
   return tf.layers.conv2d(
       inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
-      kernel_initializer=tf.variance_scaling_initializer())
+      kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_first')
 
 
 def conv2d_fixed_padding_old(x, filters, kernel_size, strides):
