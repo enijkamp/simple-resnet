@@ -47,12 +47,10 @@ def conv2d_fixed_padding_old(x, filters, kernel_size, strides, name=None):
     if strides > 1:
         x = fixed_padding(x, kernel_size)
 
-    x = tf.layers.conv2d(
+    return tf.layers.conv2d(
       inputs=x, filters=filters, kernel_size=kernel_size, strides=strides,
       padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
       kernel_initializer=tf.variance_scaling_initializer(), data_format='channels_last', name=name)
-
-    return x
 
 
 def conv2d_fixed_padding(x, filters, kernel_size, strides, name=None):
@@ -240,10 +238,18 @@ def process_record_dataset(dataset, is_training, batch_size, shuffle_buffer, par
     return dataset
 
 
-def input_function(is_training, data_dir, batch_size, num_epochs=1, num_parallel_calls=1):
+def input_function(is_training, data_dir, batch_size, num_epochs=1, num_parallel_calls=1, seed=1):
     filenames = get_filenames(is_training, data_dir)
+    shuffle_buffer = _NUM_IMAGES['train']
     dataset = tf.data.FixedLengthRecordDataset(filenames, _RECORD_BYTES)
-    return process_record_dataset(dataset, is_training, batch_size, _NUM_IMAGES['train'], parse_record, num_epochs, num_parallel_calls)
+    dataset = dataset.prefetch(buffer_size=batch_size)
+    if is_training:
+        dataset = dataset.shuffle(buffer_size=shuffle_buffer, seed=seed)
+    dataset = dataset.repeat(num_epochs)
+    dataset = dataset.map(lambda value: parse_record(value, is_training), num_parallel_calls=num_parallel_calls)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(1)
+    return dataset
 
 
 ###############################################################################
