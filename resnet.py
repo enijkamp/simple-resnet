@@ -63,6 +63,8 @@ def conv2d_fixed_padding(x, filters, kernel_size, strides, name=None):
     w = tf.Variable(tf.truncated_normal(shape=[kernel_size, kernel_size, channels, filters], stddev=0.1))
     x = tf.nn.conv2d(x, filter=w, padding=padding, strides=[1, strides, strides, 1], data_format='NHWC', name=name)
 
+    print(x.get_shape())
+
     return x
 
 
