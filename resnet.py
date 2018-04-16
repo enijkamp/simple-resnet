@@ -131,9 +131,7 @@ class Model(object):
 
         x = batch_norm(x=x, training=training)
         x = tf.nn.relu(x)
-
         x = tf.reduce_mean(x, axis=[1, 2], keepdims=True, name='final_reduce_mean')
-
         x = tf.reshape(x, [-1, self.final_size])
         x = tf.layers.dense(inputs=x, units=self.num_classes, name='final_dense')
 
