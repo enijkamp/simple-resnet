@@ -63,8 +63,6 @@ def conv2d_fixed_padding(x, filters, kernel_size, strides, name=None):
     w = tf.Variable(tf.truncated_normal(shape=[kernel_size, kernel_size, channels, filters], stddev=0.1))
     x = tf.nn.conv2d(x, filter=w, padding=padding, strides=[1, strides, strides, 1], data_format='NHWC', name=name)
 
-    print(x)
-
     return x
 
 
@@ -131,9 +129,7 @@ class Model(object):
 
         x = batch_norm(x=x, training=training)
         x = tf.nn.relu(x)
-
         x = tf.reduce_mean(x, axis=[1, 2], keepdims=True, name='final_reduce_mean')
-
         x = tf.reshape(x, [-1, self.final_size])
         x = tf.layers.dense(inputs=x, units=self.num_classes, name='final_dense')
 
