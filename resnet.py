@@ -134,7 +134,14 @@ class Model(object):
         x = tf.nn.relu(x)
         x = tf.reduce_mean(x, axis=[1, 2], keepdims=True, name='final_reduce_mean')
         x = tf.reshape(x, [-1, self.final_size])
-        x = tf.layers.dense(inputs=x, units=self.num_classes, name='final_dense')
+
+        with tf.name_scope('final_dense'):
+            fcl_weights = tf.Variable(tf.truncated_normal(shape=[self.final_size, self.num_classes], mean=0, stddev=1))
+            fcl_biases = tf.get_variable(name="fc3_biases", shape=[self.num_classes], initializer=tf.random_normal_initializer(stddev=1))
+            x = tf.matmul(x, fcl_weights) + fcl_biases
+
+
+        #x = tf.layers.dense(inputs=x, units=self.num_classes, name='final_dense')
 
         return x
 
